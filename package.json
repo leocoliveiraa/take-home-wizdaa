@@ -1,0 +1,45 @@
+{
+  "name": "wizdaa",
+  "version": "1.0.0",
+  "description": "Time-Off Microservice take-home for Wizdaa",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "node scripts/prisma-db-push.js",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --runInBand --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leocoliveiraa/take-home-wizdaa.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/leocoliveiraa/take-home-wizdaa/issues"
+  },
+  "homepage": "https://github.com/leocoliveiraa/take-home-wizdaa#readme",
+  "devDependencies": {
+    "@nestjs/testing": "^11.1.19",
+    "jest": "^30.3.0",
+    "prisma": "^6.16.2"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.19",
+    "@nestjs/core": "^11.1.19",
+    "@nestjs/platform-express": "^11.1.19",
+    "@prisma/client": "^6.16.2",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ]
+  }
+}
