@@ -52,7 +52,7 @@ If HCM rejects the approval because the balance changed elsewhere, the request i
 
 ### Approval claim before HCM mutation
 
-Before calling HCM on approval, the service first moves the request from `PENDING` to `APPROVING`. This avoids a race where two concurrent approval attempts could otherwise consume the same HCM balance twice.
+Before calling HCM on approval, the service first moves the request from `PENDING` to `APPROVING`. Without this, two managers approving at the same time could both call HCM and consume the same balance twice.
 
 ## Project Structure
 

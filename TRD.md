@@ -173,26 +173,15 @@ This means a batch update can reveal a conflict by reducing the available balanc
 
 ## 7. Consistency Strategy
 
-### 7.1 Defensive local validation
+Most of the consistency work in this service happens in three places.
 
-The service checks:
+First, before reserving anything locally, the service refreshes the balance from HCM and checks both dimension validity and available units. That is the main defensive layer, since I did not want to rely on HCM errors as the only guardrail.
 
-- that the dimension exists in HCM
-- that balance is sufficient locally after refresh
+Second, reservation uses `Balance.version` as an optimistic concurrency check. If the balance changes while two requests are trying to reserve at the same time, one of them has to retry instead of silently overwriting the other.
 
-### 7.2 Optimistic concurrency for reservation
+Third, approval claims the request by moving it from `PENDING` to `APPROVING` before the HCM mutation happens. That is what blocks two concurrent approvals from both consuming the same balance in HCM.
 
-`Balance.version` is used to avoid silent lost updates while reserving balance.
-
-The service retries reservation a small number of times and fails if the balance changed too often during the operation.
-
-### 7.3 Approval claiming
-
-The request itself is also protected from duplicate approvals by requiring a transition from `PENDING` to `APPROVING` before the HCM mutation happens.
-
-### 7.4 Idempotent request creation
-
-An optional `idempotencyKey` allows safe retries from the client without double-reserving balance.
+I also kept an optional `idempotencyKey` on request creation so the client can safely retry the same create call without double-reserving balance.
 
 ## 8. API Design
 
