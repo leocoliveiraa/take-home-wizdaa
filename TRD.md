@@ -31,7 +31,7 @@ The main risk is allowing local state to drift too far from HCM or approving req
 - Partial-day calendars, holidays, or accrual policies
 - Event buses or async workers
 
-These can exist in a production system, but I left them out on purpose so I could spend more time on balance integrity, synchronization, and tests.
+I cut these fairly early. The balance consistency problem felt like the real challenge in the prompt, and I did not want to spend time on approval chains or calendar logic at the cost of getting that part wrong.
 
 ## 3.1 Assumptions
 
@@ -58,12 +58,7 @@ The service must:
 
 ### 5.1 External balance changes
 
-ReadyOn is not the only writer. HCM balances may change because of:
-
-- year rollover
-- work anniversary grants
-- external admin actions
-- other integrated systems
+This was the first thing that stood out to me in the prompt. HCM balances can change outside this service at any time. The prompt mentioned year rollover and anniversary grants specifically, and that was enough for me to treat real-time refresh as a requirement before reserving anything locally.
 
 ### 5.2 Local race conditions
 
@@ -231,47 +226,11 @@ Full authn/authz is intentionally out of scope, but in production I would put al
 
 ## 10. Alternatives Considered
 
-### Alternative A: Consume HCM immediately on request creation
+I briefly considered consuming balance in HCM immediately on request creation instead of reserving locally, but I did not like what that does to the approval flow. A manager rejection would need a compensating HCM call, which felt worse than carrying a local reservation until approval.
 
-I decided against this for the take-home.
+I also considered skipping local reservation entirely and only checking HCM again on approval. That would make the local model simpler, but it also means multiple pending requests can sit on top of the same visible availability, which seemed like the wrong trade-off for this prompt.
 
-Pros:
-
-- fewer local states
-- stronger immediate consistency
-
-Cons:
-
-- approval workflow becomes awkward
-- a manager can no longer reject without compensating actions
-- creates tighter coupling between employee draft action and final system-of-record mutation
-
-### Alternative B: Keep no local reservation at all
-
-I also decided against this.
-
-Pros:
-
-- simpler local model
-
-Cons:
-
-- allows multiple pending requests to pile up against the same apparent availability
-- weakens employee and manager feedback
-
-### Alternative C: Event-driven/outbox architecture
-
-This would be interesting in a real system, but I felt it was too heavy for the scope here.
-
-Pros:
-
-- better for scale and auditability
-- fits microservice environments well
-
-Cons:
-
-- too much complexity for this challenge
-- more infrastructure than the exercise asks for
+An outbox or more event-driven design would be more realistic at larger scale, but I felt that would add too much infrastructure and ceremony for a take-home where the important part is showing how the consistency rules work.
 
 ## 11. Test Strategy
 
@@ -315,12 +274,14 @@ If I were extending this beyond the take-home, the next items would be:
 
 ## 13. Final Rationale
 
-I kept the solution deliberately small, but the main consistency decisions were intentional:
+The version I wanted to submit was not the one with the most features. I wanted it to be the one where the consistency behavior was easiest to defend.
 
-- validate against HCM before local reservation
-- reserve locally while pending
-- only finalize on successful HCM consumption
-- preserve reservations during batch sync
+The main choices I cared about were:
+
+- refresh against HCM before reserving locally
+- reserve locally while a request is still pending
+- only finalize after HCM accepts the balance consumption
+- keep reservations intact during batch sync
 - recover explicitly when HCM changed outside the service
 
-For this take-home, I thought that was the best trade-off between correctness, clarity, and implementation time.
+If I had more time, I would spend it on the branch coverage gap and on a background reconciliation path for HCM failures during approval. But for this take-home, I think the critical paths are covered and the trade-offs are clear enough to defend.

@@ -32,25 +32,25 @@ I intentionally kept the scope small and spent most of the effort on the parts t
 - balances are scoped only by `employeeId + locationId`, because that is what the prompt asked for
 - authentication/authorization are outside the scope of this submission
 
-## What I Optimized For
+## A Few Decisions I Made Early
 
-### 1. REST instead of GraphQL
+### REST instead of GraphQL
 
 I picked REST because the workflow is mostly about a few state transitions, and I wanted something easy to read and easy to test in a take-home setting.
 
-### 2. Local reservation for pending requests
+### Local reservation for pending requests
 
-When a request is created, the service refreshes the balance from HCM and reserves units locally. That lets the service reject obviously invalid parallel requests instead of waiting until approval time to discover the problem.
+I went back and forth a bit on this one. In the end I decided that when a request is created, the service should refresh the balance from HCM and reserve units locally right away. The main reason was to avoid the obvious case where two requests hit the same balance snapshot and both look valid until approval time. I preferred making one of them lose earlier instead of carrying both forward.
 
-### 3. HCM remains authoritative
+### HCM remains authoritative
 
 The local balance is just an operational snapshot. On approval, the service calls HCM again and only finalizes the request after HCM accepts the balance consumption.
 
-### 4. Defensive handling when HCM changed independently
+### Defensive handling when HCM changed independently
 
 If HCM rejects the approval because the balance changed elsewhere, the request is marked as `SYNC_FAILED`, the reservation is released, and the local balance is refreshed when possible.
 
-### 5. Approval claim before HCM mutation
+### Approval claim before HCM mutation
 
 Before calling HCM on approval, the service first moves the request from `PENDING` to `APPROVING`. This avoids a race where two concurrent approval attempts could otherwise consume the same HCM balance twice.
 
