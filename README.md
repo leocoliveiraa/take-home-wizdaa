@@ -41,6 +41,10 @@ Local state is only a cached operational view. On approval, the service calls HC
 
 If HCM rejects the approval because the balance changed elsewhere, the request is marked as `SYNC_FAILED`, the reservation is released, and the local balance is refreshed when possible.
 
+### 5. Approval claim before HCM mutation
+
+Before calling HCM on approval, the service first moves the request from `PENDING` to `APPROVING`. This avoids a race where two concurrent approval attempts could otherwise consume the same HCM balance twice.
+
 ## Project Structure
 
 ```text
@@ -143,12 +147,13 @@ The test suite focuses on the highest-risk flows:
 - reserving balance on request creation
 - idempotent request creation
 - successful approval and HCM consumption
+- protection against double approval
 - approval failure after external HCM changes
 - manager rejection and employee cancellation
 - batch sync without losing local reservations
 - invalid dimension handling
 
-The HCM is mocked inside the tests by replacing `fetch` with a small in-memory API that exposes the same REST contract used by the service.
+The HCM is mocked inside the tests with a small in-memory API that preserves the same REST contract used by the service client.
 
 ## Coverage
 
@@ -163,4 +168,4 @@ Current coverage from `npm run test:cov`:
 
 - I chose `prisma db push` for setup simplicity in this take-home rather than a heavier migration workflow.
 - The source is written in JavaScript to follow the requirement in the prompt.
-- NestJS is still used for module/controller/service structure even in JavaScript mode.
+- I kept NestJS in JavaScript mode because I still wanted the module/controller/service boundaries from the requested stack without adding a TypeScript build step.

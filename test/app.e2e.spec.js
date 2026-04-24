@@ -142,6 +142,42 @@ describe("Time-Off Microservice", () => {
     expect(hcmApi.getBalance("emp-4", "loc-1").units).toBe(6);
   });
 
+  it("prevents the same request from being approved twice concurrently", async () => {
+    hcmApi.reset([
+      { employeeId: "emp-4b", locationId: "loc-1", units: 10 },
+    ]);
+
+    const { balancesController, timeOffRequestsController } = await bootApp("double-approve");
+
+    const createResponse = await timeOffRequestsController.createRequest({
+      employeeId: "emp-4b",
+      locationId: "loc-1",
+      units: 4,
+      requestedBy: "employee-portal",
+    });
+
+    const [firstResult, secondResult] = await Promise.allSettled([
+      timeOffRequestsController.approveRequest(createResponse.id, {
+        approvedBy: "manager-1",
+      }),
+      timeOffRequestsController.approveRequest(createResponse.id, {
+        approvedBy: "manager-2",
+      }),
+    ]);
+
+    const successfulApproval =
+      firstResult.status === "fulfilled" ? firstResult.value : secondResult.value;
+    const failedApproval =
+      firstResult.status === "rejected" ? firstResult.reason : secondResult.reason;
+    const balanceResponse = await balancesController.getBalance("emp-4b", "loc-1");
+
+    expect(successfulApproval.status).toBe("APPROVED");
+    expect(failedApproval.message).toContain("Only pending requests can be approved");
+    expect(balanceResponse.authoritativeUnits).toBe(6);
+    expect(balanceResponse.reservedUnits).toBe(0);
+    expect(hcmApi.getBalance("emp-4b", "loc-1").units).toBe(6);
+  });
+
   it("marks a request as sync failed if HCM changed independently before approval", async () => {
     hcmApi.reset([
       { employeeId: "emp-5", locationId: "loc-1", units: 3 },

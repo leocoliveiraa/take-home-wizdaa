@@ -91,7 +91,7 @@ class TimeOffRequestsService {
   }
 
   async approveRequest(requestId, approvedBy) {
-    const request = await this.loadPendingRequest(requestId);
+    const request = await this.claimPendingApproval(requestId, approvedBy);
 
     try {
       const hcmResult = await this.hcmClient.consumeBalance({
@@ -228,6 +228,39 @@ class TimeOffRequestsService {
     }
 
     return request;
+  }
+
+  async claimPendingApproval(requestId, approvedBy) {
+    const updated = await this.prisma.timeOffRequest.updateMany({
+      where: {
+        id: requestId,
+        status: TimeOffRequestStatus.PENDING,
+      },
+      data: {
+        status: TimeOffRequestStatus.APPROVING,
+        approvedBy,
+      },
+    });
+
+    if (updated.count !== 1) {
+      const request = await this.prisma.timeOffRequest.findUnique({
+        where: {
+          id: requestId,
+        },
+      });
+
+      if (!request) {
+        throw new NotFoundException("Time-off request not found.");
+      }
+
+      throw new ConflictException("Only pending requests can be approved.");
+    }
+
+    return this.prisma.timeOffRequest.findUnique({
+      where: {
+        id: requestId,
+      },
+    });
   }
 
   serialize(request) {

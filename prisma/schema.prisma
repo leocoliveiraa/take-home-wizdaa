@@ -45,6 +45,7 @@ model TimeOffRequest {
 
 enum TimeOffRequestStatus {
   PENDING
+  APPROVING
   APPROVED
   REJECTED
   CANCELED

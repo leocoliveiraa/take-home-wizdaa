@@ -104,6 +104,7 @@ Available balance is derived as:
 Statuses:
 
 - `PENDING`
+- `APPROVING`
 - `APPROVED`
 - `REJECTED`
 - `CANCELED`
@@ -126,7 +127,7 @@ Why reserve on create:
 
 #### Approve request
 
-1. Verify request is still `PENDING`
+1. Atomically claim the request by moving it from `PENDING` to `APPROVING`
 2. Call HCM to consume units
 3. If HCM accepts:
    - mark request `APPROVED`
@@ -136,6 +137,8 @@ Why reserve on create:
    - mark request `SYNC_FAILED`
    - release local reservation
    - refresh local authoritative balance when possible
+
+Using the intermediate `APPROVING` state avoids a race where two managers approve the same request at nearly the same time and both end up consuming balance in HCM.
 
 #### Reject request
 
@@ -179,7 +182,11 @@ The service checks:
 
 The service retries reservation a small number of times and fails if the balance changed too often during the operation.
 
-### 7.3 Idempotent request creation
+### 7.3 Approval claiming
+
+The request itself is also protected from duplicate approvals by requiring a transition from `PENDING` to `APPROVING` before the HCM mutation happens.
+
+### 7.4 Idempotent request creation
 
 An optional `idempotencyKey` allows safe retries from the client without double-reserving balance.
 
@@ -268,6 +275,7 @@ Covered scenarios:
 - create request and reserve balance
 - idempotent request creation
 - successful approval
+- double approval protection
 - approval failure after external HCM change
 - manager rejection
 - request cancellation
