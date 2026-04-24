@@ -81,10 +81,12 @@ If `DATABASE_URL` is not provided, the app defaults to a SQLite file in `prisma/
 npm install
 npm run prisma:generate
 npm run prisma:push
+npm run mock:hcm
 npm start
 ```
 
-The service starts on `http://localhost:3000` by default.
+The mock HCM starts on `http://localhost:4010` by default.  
+The main service starts on `http://localhost:3000` by default.
 
 ## API Summary
 
@@ -154,6 +156,8 @@ The test suite focuses on the highest-risk flows:
 - invalid dimension handling
 
 The HCM is mocked inside the tests with a small in-memory API that preserves the same REST contract used by the service client.
+
+There is also a runnable mock HCM server at [scripts/mock-hcm-server.js](/Users/leonardo/github/wizdaa/scripts/mock-hcm-server.js) so the integration can be exercised manually outside the test suite.
 
 ## Coverage
 

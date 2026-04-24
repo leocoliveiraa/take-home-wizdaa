@@ -284,6 +284,8 @@ Covered scenarios:
 
 The HCM is mocked with the same request/response contract the client uses, which keeps tests focused on business behavior rather than implementation internals.
 
+I also included a small runnable mock HCM server so the REST integration can be exercised manually, not only through the automated tests.
+
 Coverage from the current run:
 
 - Statements: `85.03%`

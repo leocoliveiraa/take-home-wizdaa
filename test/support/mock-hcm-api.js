@@ -1,6 +1,4 @@
-function createKey(employeeId, locationId) {
-  return `${employeeId}::${locationId}`;
-}
+const { createMockHcm } = require("../../src/mock-hcm/create-mock-hcm");
 
 function jsonResponse(status, payload) {
   return new Response(JSON.stringify(payload), {
@@ -20,23 +18,8 @@ async function parseJsonBody(options) {
 }
 
 function createMockHcmApi(seedBalances = []) {
-  const balances = new Map();
+  const mockHcm = createMockHcm(seedBalances);
   const baseUrl = "http://mock-hcm.local";
-
-  function reset(nextBalances = []) {
-    balances.clear();
-    nextBalances.forEach((entry) => {
-      balances.set(createKey(entry.employeeId, entry.locationId), { ...entry });
-    });
-  }
-
-  function setBalance(entry) {
-    balances.set(createKey(entry.employeeId, entry.locationId), { ...entry });
-  }
-
-  function getBalance(employeeId, locationId) {
-    return balances.get(createKey(employeeId, locationId)) || null;
-  }
 
   async function fetchHandler(input, options = {}) {
     const url = new URL(typeof input === "string" ? input : input.toString());
@@ -46,44 +29,17 @@ function createMockHcmApi(seedBalances = []) {
     }
 
     if (options.method === "GET" && url.pathname === "/balances") {
-      const employeeId = url.searchParams.get("employeeId");
-      const locationId = url.searchParams.get("locationId");
-      const balance = getBalance(employeeId, locationId);
-
-      if (!balance) {
-        return jsonResponse(422, {
-          message: "Invalid employeeId/locationId combination.",
-        });
-      }
-
-      return jsonResponse(200, balance);
+      const result = await mockHcm.getBalanceResponse(
+        url.searchParams.get("employeeId"),
+        url.searchParams.get("locationId"),
+      );
+      return jsonResponse(result.status, result.body);
     }
 
     if (options.method === "POST" && url.pathname === "/balances/consume") {
       const body = await parseJsonBody(options);
-      const balance = getBalance(body.employeeId, body.locationId);
-
-      if (!balance) {
-        return jsonResponse(422, {
-          message: "Invalid employeeId/locationId combination.",
-        });
-      }
-
-      if (balance.units < body.units) {
-        return jsonResponse(409, {
-          message: "Insufficient balance in HCM.",
-        });
-      }
-
-      balance.units -= body.units;
-
-      return jsonResponse(200, {
-        employeeId: balance.employeeId,
-        locationId: balance.locationId,
-        consumedUnits: body.units,
-        remainingUnits: balance.units,
-        reference: `hcm-${body.requestId}`,
-      });
+      const result = await mockHcm.consumeBalance(body);
+      return jsonResponse(result.status, result.body);
     }
 
     return jsonResponse(404, {
@@ -91,14 +47,12 @@ function createMockHcmApi(seedBalances = []) {
     });
   }
 
-  reset(seedBalances);
-
   return {
     baseUrl,
     fetchHandler,
-    getBalance,
-    reset,
-    setBalance,
+    getBalance: mockHcm.getBalance,
+    reset: mockHcm.reset,
+    setBalance: mockHcm.setBalance,
   };
 }
 

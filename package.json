@@ -5,6 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "start": "node src/main.js",
+    "mock:hcm": "node scripts/mock-hcm-server.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "node scripts/prisma-db-push.js",
     "test": "jest --runInBand",
