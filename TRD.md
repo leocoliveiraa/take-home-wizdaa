@@ -1,5 +1,7 @@
 # Technical Requirements Document
 
+My goal with this solution was not to cover every HR edge case. I tried to keep the service small and easy to reason about while being careful about the consistency problems that seemed most important in the prompt.
+
 ## 1. Problem Statement
 
 ReadyOn is the main employee-facing interface for time-off requests, but the HCM remains the source of truth for balances and dimension validity.
@@ -29,7 +31,14 @@ The main risk is allowing local state to drift too far from HCM or approving req
 - Partial-day calendars, holidays, or accrual policies
 - Event buses or async workers
 
-These can exist in a production system, but they are intentionally out of scope here to keep the take-home focused on balance integrity and sync behavior.
+These can exist in a production system, but I left them out on purpose so I could spend more time on balance integrity, synchronization, and tests.
+
+## 3.1 Assumptions
+
+- I treated time-off as generic units rather than modeling calendars, holidays, or half-days.
+- I assumed approval is a single-step manager action.
+- I assumed HCM is the only authoritative source for balance values and dimension validity.
+- I assumed balances are scoped only by `employeeId + locationId`, since that was explicit in the prompt.
 
 ## 4. Functional Requirements
 
@@ -224,7 +233,7 @@ Full authn/authz is intentionally out of scope, but in production I would put al
 
 ### Alternative A: Consume HCM immediately on request creation
 
-Rejected for this take-home.
+I decided against this for the take-home.
 
 Pros:
 
@@ -239,7 +248,7 @@ Cons:
 
 ### Alternative B: Keep no local reservation at all
 
-Rejected.
+I also decided against this.
 
 Pros:
 
@@ -252,7 +261,7 @@ Cons:
 
 ### Alternative C: Event-driven/outbox architecture
 
-Interesting, but out of scope here.
+This would be interesting in a real system, but I felt it was too heavy for the scope here.
 
 Pros:
 
@@ -306,7 +315,7 @@ If I were extending this beyond the take-home, the next items would be:
 
 ## 13. Final Rationale
 
-The solution intentionally stays small, but the core consistency decisions are deliberate:
+I kept the solution deliberately small, but the main consistency decisions were intentional:
 
 - validate against HCM before local reservation
 - reserve locally while pending
@@ -314,4 +323,4 @@ The solution intentionally stays small, but the core consistency decisions are d
 - preserve reservations during batch sync
 - recover explicitly when HCM changed outside the service
 
-That gives employees fast feedback, gives managers a safer approval path, and keeps the implementation understandable for a take-home submission.
+For this take-home, I thought that was the best trade-off between correctness, clarity, and implementation time.

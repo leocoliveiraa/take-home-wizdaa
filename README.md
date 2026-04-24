@@ -1,12 +1,14 @@
 # take-home-wizdaa
 
-Time-Off Microservice built for the Wizdaa take-home assessment.
+This is my submission for the Wizdaa take-home assessment.
 
 ## Overview
 
-This service manages the lifecycle of time-off requests while keeping balances aligned with an external HCM, which is treated as the system of record.
+The main thing I optimized for here was balance integrity, not breadth of features.
 
-The implementation focuses on a small but defensible scope:
+The service manages the lifecycle of time-off requests while keeping balances aligned with an external HCM, which I treat as the source of truth.
+
+I intentionally kept the scope small and spent most of the effort on the parts that looked riskiest in the prompt:
 
 - local balance snapshots per `employeeId + locationId`
 - defensive validation before creating requests
@@ -23,19 +25,26 @@ The implementation focuses on a small but defensible scope:
 - SQLite
 - Jest
 
-## Main Design Choices
+## Assumptions
+
+- time-off is handled as generic units rather than full calendar logic
+- approval is a single manager action
+- balances are scoped only by `employeeId + locationId`, because that is what the prompt asked for
+- authentication/authorization are outside the scope of this submission
+
+## What I Optimized For
 
 ### 1. REST instead of GraphQL
 
-REST keeps the take-home smaller, easier to review, and straightforward to test within the time available.
+I picked REST because the workflow is mostly about a few state transitions, and I wanted something easy to read and easy to test in a take-home setting.
 
 ### 2. Local reservation for pending requests
 
-When a request is created, the service refreshes the balance from HCM and reserves units locally. This prevents obviously invalid parallel requests from being created against the same local balance snapshot.
+When a request is created, the service refreshes the balance from HCM and reserves units locally. That lets the service reject obviously invalid parallel requests instead of waiting until approval time to discover the problem.
 
 ### 3. HCM remains authoritative
 
-Local state is only a cached operational view. On approval, the service calls HCM again and only finalizes the request after HCM accepts the balance consumption.
+The local balance is just an operational snapshot. On approval, the service calls HCM again and only finalizes the request after HCM accepts the balance consumption.
 
 ### 4. Defensive handling when HCM changed independently
 
@@ -81,7 +90,17 @@ If `DATABASE_URL` is not provided, the app defaults to a SQLite file in `prisma/
 npm install
 npm run prisma:generate
 npm run prisma:push
+```
+
+In one terminal:
+
+```bash
 npm run mock:hcm
+```
+
+In another terminal:
+
+```bash
 npm start
 ```
 
@@ -155,7 +174,7 @@ The test suite focuses on the highest-risk flows:
 - batch sync without losing local reservations
 - invalid dimension handling
 
-The HCM is mocked inside the tests with a small in-memory API that preserves the same REST contract used by the service client.
+For the automated tests I mocked the HCM with the same REST behavior used by the client so the tests stay deterministic and focused on the business rules.
 
 There is also a runnable mock HCM server at [scripts/mock-hcm-server.js](/Users/leonardo/github/wizdaa/scripts/mock-hcm-server.js) so the integration can be exercised manually outside the test suite.
 
@@ -170,6 +189,6 @@ Current coverage from `npm run test:cov`:
 
 ## Notes
 
-- I chose `prisma db push` for setup simplicity in this take-home rather than a heavier migration workflow.
-- The source is written in JavaScript to follow the requirement in the prompt.
-- I kept NestJS in JavaScript mode because I still wanted the module/controller/service boundaries from the requested stack without adding a TypeScript build step.
+- I used `prisma db push` here to keep setup friction low for whoever reviews the project. In a longer-lived service I would switch to versioned migrations.
+- I wrote the project in JavaScript because the prompt explicitly asked for it, even though I would normally lean toward TypeScript for NestJS code.
+- I kept NestJS in JavaScript mode because I still wanted the module/controller/service boundaries from the requested stack without adding a TypeScript build step to the submission.
