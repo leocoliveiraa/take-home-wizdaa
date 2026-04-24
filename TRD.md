@@ -252,14 +252,14 @@ Coverage from the current run:
 
 ## 12. Limitations and Next Steps
 
-If I were extending this beyond the take-home, the next items would be:
+If I were extending this beyond the take-home, the first thing I would add is a proper audit trail for balance transitions. Right now the system keeps the current state correctly, but it does not make it easy to reconstruct the full story of a request if something fails in the middle of sync or approval.
 
-- stronger audit history for every balance transition
+After that, the next items I would prioritize are:
+
 - authenticated identities and role checks
-- richer approval metadata
-- pagination/filtering for request lists
-- stronger reconciliation/reporting for negative available balances after external changes
-- background re-sync jobs and retry policy for transient HCM outages
+- background reconciliation/retry for HCM outages during approval
+- richer reporting when external balance updates create local conflicts
+- pagination/filtering if request volume grows enough to need it
 
 ## 13. Final Rationale
 
