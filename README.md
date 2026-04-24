@@ -2,6 +2,12 @@
 
 This is my submission for the Wizdaa take-home assessment.
 
+## Repository
+
+GitHub repository: [leocoliveiraa/take-home-wizdaa](https://github.com/leocoliveiraa/take-home-wizdaa)
+
+I included the repository link here because the submission form only asks for the `.zip` file, but the original instructions also mentioned sharing the project in a GitHub repository. Adding the link to the README felt like the simplest way to make both submission paths available to the reviewer.
+
 ## Overview
 
 The main thing I optimized for here was balance integrity, not breadth of features.
